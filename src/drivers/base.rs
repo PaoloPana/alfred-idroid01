@@ -56,4 +56,19 @@ impl Base {
     generate_sleep!();
     generate_boot!();
     generate_get_firmware!();
+
+    pub fn get_status(&self) -> String {
+        format!("BASE (firmware: {})\n - get_fwd: {}\n - get_bwd: {}\n - get_rot_fw: {}\n - get_rot_bw: {}\n - BB: {}\n - get_base: {}", //\n - get_notches_lw: {}\n - get_notches_rw: {}",
+                self.get_firmware().unwrap_or_else(|e| e),
+                self.get_fwd().map(|v| v.to_string()).unwrap_or_else(|e| e),
+                self.get_bwd().map(|v| v.to_string()).unwrap_or_else(|e| e),
+                self.get_rot_fw().map(|v| v.to_string()).unwrap_or_else(|e| e),
+                self.get_rot_bw().map(|v| v.to_string()).unwrap_or_else(|e| e),
+                self.get_bb().map(|v| v.to_string()).unwrap_or_else(|e| e),
+                self.get_base().map(|v| v.to_string()).unwrap_or_else(|e| e)/*,
+                self.get_notches_lw().map(|v| v.to_string()).unwrap_or_else(|e| e),
+                self.get_notches_rw().map(|v| v.to_string()).unwrap_or_else(|e| e)*/
+        )
+    }
+
 }
