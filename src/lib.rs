@@ -1,5 +1,4 @@
 pub mod drivers;
-pub mod commands;
 
 use std::collections::LinkedList;
 use crate::drivers::arms::Arms;
