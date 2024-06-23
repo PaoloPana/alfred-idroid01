@@ -5,12 +5,14 @@ use crate::drivers::arms::Arms;
 use crate::drivers::base::Base;
 use crate::drivers::hand::Hand;
 use crate::drivers::head::Head;
+use crate::drivers::motherboard::Motherboard;
 
 pub struct Drivers {
     pub head: Head,
     pub base: Base,
     pub arms: Arms,
-    pub hand: Hand
+    pub hand: Hand,
+    pub motherboard: Motherboard
 }
 impl Drivers {
     pub fn new(path: &str) -> Drivers {
@@ -18,7 +20,8 @@ impl Drivers {
             head: Head::new(path),
             base: Base::new(path),
             arms: Arms::new(path),
-            hand: Hand::new(path)
+            hand: Hand::new(path),
+            motherboard: Motherboard::new(path)
         }
     }
 
@@ -34,8 +37,12 @@ impl Drivers {
         let first_command = commands.pop_front().unwrap();
         match first_command.as_str() {
             "" => Err("Error: empty command".to_string()),
-            // TODO: continue implementing
             "head" => self.head.get_command(commands).map_err(|_| format!("Unknown command {}", command)),
+            "base" => self.base.get_command(commands).map_err(|_| format!("Unknown command {}", command)),
+            // TODO: implement other commands
+            //"arms" => self.arms.get_command(commands).map_err(|_| format!("Unknown command {}", command)),
+            //"hand" => self.hand.get_command(commands).map_err(|_| format!("Unknown command {}", command)),
+            "motherboard" => self.motherboard.get_command(commands).map_err(|_| format!("Unknown command {}", command)),
             _ => Err(format!("Unknown command {}", command))
         }
     }

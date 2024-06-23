@@ -71,4 +71,40 @@ impl Base {
         )
     }
 
+    pub fn get_command(&self, mut commands: LinkedList<String>) -> Result<String, String> {
+        if commands.len() == 0 {
+            return Err("".to_string());
+        }
+        let command = commands.pop_front().unwrap();
+        let param = commands.pop_front();
+        match param {
+            None => {
+                return match command.as_str() {
+                    "" => Ok(self.get_status()),
+                    "fwd" => self.get_fwd().map(|v| v.to_string()),
+                    "bwd" => self.get_bwd().map(|v| v.to_string()),
+                    "rot_fw" => self.get_rot_fw().map(|v| v.to_string()),
+                    "rot_bw" => self.get_rot_bw().map(|v| v.to_string()),
+                    "base" => self.get_base().map(|v| v.to_string()),
+                    "firmware" => self.get_firmware(),
+                    _ => Err("Unknown".to_string())
+                };
+            },
+            Some(param) => {
+                let param = param.parse::<u8>().unwrap();
+                match command.as_str() {
+                    "" => Ok(self.get_status()),
+                    "fwd" => self.set_fwd(param).map(|_| "OK".to_string()),
+                    "bwd" => self.set_bwd(param).map(|_| "OK".to_string()),
+                    "rot_fw" => self.set_rot_fw(param).map(|_| "OK".to_string()),
+                    "rot_bw" => self.set_rot_bw(param).map(|_| "OK".to_string()),
+                    "base" => self.set_base(param).map(|_| "OK".to_string()),
+                    "left_speed" => self.set_left_speed(param).map(|_| "OK".to_string()),
+                    "right_speed" => self.set_right_speed(param).map(|_| "OK".to_string()),
+                    _ => Err("Unknown".to_string())
+                }
+            }
+        }
+    }
+
 }

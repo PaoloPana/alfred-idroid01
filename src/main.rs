@@ -36,13 +36,14 @@ async fn manage_input_messages(publisher: &Arc<Mutex<AlfredPublisher>>, subscrib
 
 async fn manage_device_events(publisher: &Arc<Mutex<AlfredPublisher>>, drivers: &Arc<Mutex<Drivers>>, watcher_commands: Vec<String>, devices_statuses: &mut HashMap<String, String>) -> Result<(), Error> {
     for command in watcher_commands {
-        let result = drivers.lock().await.get_command(command.clone()).unwrap();
-        let previous = devices_statuses.insert(command, result.clone()).unwrap_or(result.clone()).clone();
+        let command_str = command.as_str();
+        let result = drivers.lock().await.get_command(command_str.to_string()).unwrap();
+        let previous = devices_statuses.insert(command_str.to_string(), result.clone()).unwrap_or(result.clone()).clone();
         if result != previous {
             let mut message = Message::empty();
             message.text = result;
             // TODO: move event topic to config.toml file
-            publisher.lock().await.send("events.idroid01".to_string(), &message).await.expect("Error on send message");
+            publisher.lock().await.send(format!("events.idroid01.{}", command_str.replace(" ", "_")), &message).await.expect("Error on send message");
         }
     }
     Ok(())
@@ -60,7 +61,7 @@ async fn main() -> Result<(), Error> {
     let drivers2 = drivers.clone();
     subscriber.lock().await.listen(INPUT_TOPIC.to_string()).await?;
     // TODO: load from config.toml file
-    let watcher_commands = vec!["head touch".to_string()];
+    let watcher_commands = vec!["head touch".to_string(), "motherboard kbd".to_string()];
 
     tokio::spawn(async move {
         let drivers = drivers2.clone();
