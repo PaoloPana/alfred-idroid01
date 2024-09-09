@@ -37,12 +37,12 @@ impl Drivers {
         let first_command = commands.pop_front().unwrap();
         match first_command.as_str() {
             "" => Err("Error: empty command".to_string()),
-            "head" => self.head.get_command(commands).map_err(|_| format!("Unknown command {}", command)),
-            "base" => self.base.get_command(commands).map_err(|_| format!("Unknown command {}", command)),
+            "head" => self.head.get_command(commands),
+            "base" => self.base.get_command(commands),
             // TODO: implement other commands
             //"arms" => self.arms.get_command(commands).map_err(|_| format!("Unknown command {}", command)),
             //"hand" => self.hand.get_command(commands).map_err(|_| format!("Unknown command {}", command)),
-            "motherboard" => self.motherboard.get_command(commands).map_err(|_| format!("Unknown command {}", command)),
+            "motherboard" => self.motherboard.get_command(commands),
             _ => Err(format!("Unknown command {}", command))
         }
     }

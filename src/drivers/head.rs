@@ -54,6 +54,12 @@ impl Head {
     generate_sleep!();
     generate_get_firmware!();
 
+    pub fn set_led_status(&self, led_status: u8) -> Result<(), String> {
+        self.set_led_on(led_status)?;
+        self.set_led_off(255-led_status)?;
+        Ok(())
+    }
+
     pub fn get_status(&self) -> String {
         format!("Head (firmware: {})\n - Tilt: {}\n - Pan: {}\n - LED: {}\n - Blink: {}\n - BB: {}\n - Touch-SF: {}\n - Tilt POS: {}\n - Pan POS: {}",
                 self.get_firmware().unwrap_or_else(|e| e),
@@ -94,7 +100,7 @@ impl Head {
                     "" => Ok(self.get_status()),
                     "tilt" => self.set_tilt_up(param).map(|_| "OK".to_string()),
                     "pan" => self.set_pan_right(param).map(|_| "OK".to_string()),
-                    "led" => self.set_led_on(param).map(|_| "OK".to_string()),
+                    "led" => self.set_led_status(param).map(|_| "OK".to_string()),
                     "blink" => self.set_blink(param).map(|_| "OK".to_string()),
                     _ => Err("Unknown".to_string())
                 }
