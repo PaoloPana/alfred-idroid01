@@ -16,7 +16,7 @@ const MODULE_NAME: &'static str = "idroid01";
 const INPUT_TOPIC: &'static str = "idroid01";
 
 async fn manage_input_messages(publisher: &Arc<Mutex<AlfredPublisher>>, subscriber: &Arc<Mutex<AlfredSubscriber>>, drivers: &Arc<Mutex<Drivers>>) -> Result<(), Error> {
-    let (topic, mut message) = subscriber.lock().await.receive().await?;
+    let (topic, message) = subscriber.lock().await.receive().await?;
     let drivers = drivers.clone();
     match topic.as_str() {
         INPUT_TOPIC => {
@@ -49,9 +49,7 @@ async fn manage_device_events(publisher: &Arc<Mutex<AlfredPublisher>>, drivers: 
                     debug!("{command_str}: {result} (previous: {previous})");
                     let mut message = Message::empty();
                     message.text = result;
-                    // TODO: move event topic to config.toml file / main library
-                    let topic = format!("events.idroid01.{}", command_str.replace(" ", "_"));
-                    publisher.lock().await.send(topic, &message).await.expect("Error on send message");
+                    publisher.lock().await.send_event(MODULE_NAME.to_string(), command_str.replace(" ", "_"), &message).await?;
                 }
             }
         }
