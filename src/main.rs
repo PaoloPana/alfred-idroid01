@@ -23,7 +23,7 @@ async fn manage_input_messages(publisher: &Arc<Mutex<AlfredPublisher>>, subscrib
             let result = drivers.lock().await.get_command(message.text.clone()).unwrap_or(format!("Unknown command {}", message.text));
             debug!("{}", result);
             let (response_topic, response) = message.reply(result.clone(), MessageType::TEXT)?;
-            publisher.lock().await.send(response_topic, &response).await.inspect_err(|err| error!("{err}")).unwrap();
+            publisher.lock().await.send(&response_topic, &response).await.inspect_err(|err| error!("{err}")).unwrap();
         },
         _ => {}
     }
@@ -49,7 +49,7 @@ async fn manage_device_events(publisher: &Arc<Mutex<AlfredPublisher>>, drivers: 
                     debug!("{command_str}: {result} (previous: {previous})");
                     let mut message = Message::empty();
                     message.text = result;
-                    publisher.lock().await.send_event(MODULE_NAME.to_string(), command_str.replace(" ", "_"), &message).await?;
+                    publisher.lock().await.send_event(MODULE_NAME, command_str.replace(" ", "_").as_str(), &message).await?;
                 }
             }
         }
@@ -62,14 +62,14 @@ async fn manage_device_events(publisher: &Arc<Mutex<AlfredPublisher>>, drivers: 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     env_logger::init();
-    let module = InterfaceModule::new(MODULE_NAME.to_string()).await?;
+    let module = InterfaceModule::new(MODULE_NAME).await?;
     let subscriber = Arc::new(Mutex::new(module.connection.subscriber));
     let publisher1 = Arc::new(Mutex::new(module.connection.publisher));
     let publisher2 = publisher1.clone();
 
     let drivers = Arc::new(Mutex::new(Drivers::new("/dev/i2c-1")));
     let drivers2 = drivers.clone();
-    subscriber.lock().await.listen(INPUT_TOPIC.to_string()).await?;
+    subscriber.lock().await.listen(INPUT_TOPIC).await?;
     // TODO: load from config.toml file
     let watcher_commands = vec![
         "head touch".to_string(),
