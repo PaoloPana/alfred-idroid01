@@ -15,8 +15,8 @@ pub struct Drivers {
     pub motherboard: Motherboard
 }
 impl Drivers {
-    pub fn new(path: &str) -> Drivers {
-        Drivers {
+    pub fn new(path: &str) -> Self {
+        Self {
             head: Head::new(path),
             base: Base::new(path),
             arms: Arms::new(path),
@@ -25,16 +25,16 @@ impl Drivers {
         }
     }
 
-    pub fn get_head(&self) -> &Head {
+    pub const fn get_head(&self) -> &Head {
         &self.head
     }
 
-    pub fn get_command(&self, command: String) -> Result<String, String> {
-        let mut commands = command.split(" ").map(|s| s.to_string()).collect::<LinkedList<String>>();
-        if commands.len() == 0 {
+    pub fn get_command(&self, command: &str) -> Result<String, String> {
+        let mut commands = command.split(' ').map(ToString::to_string).collect::<LinkedList<String>>();
+        if commands.is_empty() {
             return Err("Error: empty command".to_string());
         }
-        let first_command = commands.pop_front().unwrap();
+        let first_command = commands.pop_front().ok_or_else(|| format!("Error: invalid command: {command}"))?;
         match first_command.as_str() {
             "" => Err("Error: empty command".to_string()),
             "head" => self.head.get_command(commands),
@@ -43,7 +43,7 @@ impl Drivers {
             //"arms" => self.arms.get_command(commands).map_err(|_| format!("Unknown command {}", command)),
             //"hand" => self.hand.get_command(commands).map_err(|_| format!("Unknown command {}", command)),
             "motherboard" => self.motherboard.get_command(commands),
-            _ => Err(format!("Unknown command {}", command))
+            _ => Err(format!("Unknown command {command}"))
         }
     }
 }

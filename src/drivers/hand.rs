@@ -1,4 +1,4 @@
-use crate::*;
+use crate::{generate_getter, generate_setter, generate_sleep};
 
 const HAND: u16 = 0x2d;
 
@@ -15,8 +15,8 @@ pub struct Hand {
 }
 
 impl Hand {
-    pub fn new(path: &str) -> Hand {
-        Hand {
+    pub fn new(path: &str) -> Self {
+        Self {
             path: path.into(),
             device_id: HAND
         }

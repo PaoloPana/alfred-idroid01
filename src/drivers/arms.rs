@@ -1,4 +1,4 @@
-use crate::*;
+use crate::{generate_boot, generate_get_firmware, generate_getter, generate_getter_block, generate_getter_str, generate_setter, generate_sleep};
 
 const ARMS: u16 = 0x2c;
 const LEFT_ARM_REG: u8 = 0x01;
@@ -25,8 +25,8 @@ pub struct Arms {
 }
 
 impl Arms {
-    pub fn new(path: &str) -> Arms {
-        Arms {
+    pub fn new(path: &str) -> Self {
+        Self {
             path: path.into(),
             device_id: ARMS
         }

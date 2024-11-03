@@ -1,4 +1,4 @@
-use crate::*;
+use crate::{LinkedList, generate_boot, generate_get_firmware, generate_getter, generate_getter_str, generate_setter, generate_sleep};
 
 const MOTHERBOARD: u16 = 0x2b;
 const MIND_REG: u8 = 0x07;
@@ -11,8 +11,8 @@ pub struct Motherboard {
 }
 
 impl Motherboard {
-    pub fn new(path: &str) -> Motherboard {
-        Motherboard {
+    pub fn new(path: &str) -> Self {
+        Self {
             path: path.into(),
             device_id: MOTHERBOARD
         }
@@ -29,28 +29,28 @@ impl Motherboard {
     pub fn get_status(&self) -> String {
         format!("MOTHERBOARD (firmware: {})\n - get_mind: {}\n - get_body: {}\n - get_kbd: {}",
                 self.get_firmware().unwrap_or_else(|e| e),
-                self.get_mind().map(|v| v.to_string()).unwrap_or_else(|e| e),
-                self.get_body().map(|v| v.to_string()).unwrap_or_else(|e| e),
-                self.get_kbd().map(|v| v.to_string()).unwrap_or_else(|e| e)
+                self.get_mind().map_or_else(|e| e, |v| v.to_string()),
+                self.get_body().map_or_else(|e| e, |v| v.to_string()),
+                self.get_kbd().map_or_else(|e| e, |v| v.to_string())
         )
     }
 
     pub fn get_command(&self, mut commands: LinkedList<String>) -> Result<String, String> {
-        if commands.len() == 0 {
-            return Err("".to_string());
+        if commands.is_empty() {
+            return Err("Command not found".to_string());
         }
-        let command = commands.pop_front().unwrap();
+        let command = commands.pop_front().ok_or("Command not found")?;
         let param = commands.pop_front();
         match param {
             None => {
-                return match command.as_str() {
+                match command.as_str() {
                     "" => Ok(self.get_status()),
                     "mind" => self.get_mind().map(|v| v.to_string()),
                     "body" => self.get_body().map(|v| v.to_string()),
                     "kbd" => self.get_kbd().map(|v| v.to_string()),
                     "firmware" => self.get_firmware(),
                     _ => Err("Unknown".to_string())
-                };
+                }
             },
             Some(_) => {
                 Err("Unknown".to_string())

@@ -1,4 +1,4 @@
-use crate::*;
+use crate::{LinkedList, generate_boot, generate_get_firmware, generate_getter, generate_getter_block, generate_getter_str, generate_setter, generate_sleep};
 
 const BASE: u16 = 0x2a;
 const FWD_REG: u8 = 0x01;
@@ -12,9 +12,9 @@ const US3_REG: u8 = 0x08;
 const BASE_REG: u8 = 0x09;
 const LEFT_SPEED_REG: u8 = 0x0b;
 const RIGHT_SPEED_REG: u8 = 0x0c;
-const LEFT_COUNT_REG: (u8, u8) = (0x0d, 2);
+//const LEFT_COUNT_REG: (u8, u8) = (0x0d, 2);
 const NOTCHES_LW_REG: (u8, u8) = (0x0d, 2);
-const RIGHT_COUNT_REG: (u8, u8) = (0x0f, 2);
+//const RIGHT_COUNT_REG: (u8, u8) = (0x0f, 2);
 const NOTCHES_RW_REG: (u8, u8) = (0x0f, 2);
 
 pub struct Base {
@@ -23,8 +23,8 @@ pub struct Base {
 }
 
 impl Base {
-    pub fn new(path: &str) -> Base {
-        Base {
+    pub fn new(path: &str) -> Self {
+        Self {
             path: path.into(),
             device_id: BASE
         }
@@ -60,22 +60,22 @@ impl Base {
     pub fn get_status(&self) -> String {
         format!("BASE (firmware: {})\n - get_fwd: {}\n - get_bwd: {}\n - get_rot_fw: {}\n - get_rot_bw: {}\n - BB: {}\n - get_base: {}", //\n - get_notches_lw: {}\n - get_notches_rw: {}",
                 self.get_firmware().unwrap_or_else(|e| e),
-                self.get_fwd().map(|v| v.to_string()).unwrap_or_else(|e| e),
-                self.get_bwd().map(|v| v.to_string()).unwrap_or_else(|e| e),
-                self.get_rot_fw().map(|v| v.to_string()).unwrap_or_else(|e| e),
-                self.get_rot_bw().map(|v| v.to_string()).unwrap_or_else(|e| e),
-                self.get_bb().map(|v| v.to_string()).unwrap_or_else(|e| e),
-                self.get_base().map(|v| v.to_string()).unwrap_or_else(|e| e)/*,
+                self.get_fwd().map_or_else(|e| e, |v| v.to_string()),
+                self.get_bwd().map_or_else(|e| e, |v| v.to_string()),
+                self.get_rot_fw().map_or_else(|e| e, |v| v.to_string()),
+                self.get_rot_bw().map_or_else(|e| e, |v| v.to_string()),
+                self.get_bb().map_or_else(|e| e, |v| v.to_string()),
+                self.get_base().map_or_else(|e| e, |v| v.to_string())/*,
                 self.get_notches_lw().map(|v| v.to_string()).unwrap_or_else(|e| e),
                 self.get_notches_rw().map(|v| v.to_string()).unwrap_or_else(|e| e)*/
         )
     }
 
     pub fn get_command(&self, mut commands: LinkedList<String>) -> Result<String, String> {
-        if commands.len() == 0 {
-            return Err("".to_string());
+        if commands.is_empty() {
+            return Err("Command not found".to_string());
         }
-        let command = commands.pop_front().unwrap();
+        let command = commands.pop_front().ok_or_else(|| String::from("Command not found"))?;
         let param = commands.pop_front();
         match param {
             None => {
@@ -91,16 +91,16 @@ impl Base {
                 };
             },
             Some(param) => {
-                let param = param.parse::<u8>().unwrap();
+                let param = param.parse::<u8>().map_err(|e| e.to_string())?;
                 match command.as_str() {
                     "" => Ok(self.get_status()),
-                    "fwd" => self.set_fwd(param).map(|_| "OK".to_string()),
-                    "bwd" => self.set_bwd(param).map(|_| "OK".to_string()),
-                    "rot_fw" => self.set_rot_fw(param).map(|_| "OK".to_string()),
-                    "rot_bw" => self.set_rot_bw(param).map(|_| "OK".to_string()),
-                    "base" => self.set_base(param).map(|_| "OK".to_string()),
-                    "left_speed" => self.set_left_speed(param).map(|_| "OK".to_string()),
-                    "right_speed" => self.set_right_speed(param).map(|_| "OK".to_string()),
+                    "fwd" => self.set_fwd(param).map(|()| "OK".to_string()),
+                    "bwd" => self.set_bwd(param).map(|()| "OK".to_string()),
+                    "rot_fw" => self.set_rot_fw(param).map(|()| "OK".to_string()),
+                    "rot_bw" => self.set_rot_bw(param).map(|()| "OK".to_string()),
+                    "base" => self.set_base(param).map(|()| "OK".to_string()),
+                    "left_speed" => self.set_left_speed(param).map(|()| "OK".to_string()),
+                    "right_speed" => self.set_right_speed(param).map(|()| "OK".to_string()),
                     _ => Err("Unknown".to_string())
                 }
             }
