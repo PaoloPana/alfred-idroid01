@@ -4,7 +4,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use alfred_rs::connection::{Receiver, Sender};
 use alfred_rs::error::Error;
-use alfred_rs::interface_module::InterfaceModule;
+use alfred_rs::AlfredModule;
 use alfred_rs::log::{debug, error, warn};
 use alfred_rs::message::{Message, MessageType};
 use alfred_rs::pubsub_connection::{AlfredPublisher, AlfredSubscriber};
@@ -21,7 +21,7 @@ async fn manage_input_messages(publisher: &Arc<Mutex<AlfredPublisher>>, subscrib
     if topic.as_str() == INPUT_TOPIC {
             let result = drivers.lock().await.get_command(message.text.as_str()).unwrap_or_else(|_| format!("Unknown command {}", message.text));
             debug!("{}", result);
-            let (response_topic, response) = message.reply(result.clone(), MessageType::TEXT)?;
+            let (response_topic, response) = message.reply(result.clone(), MessageType::Text)?;
             publisher.lock().await.send(&response_topic, &response).await.inspect_err(|err| error!("{err}"))?;
     }
     Ok(())
@@ -60,7 +60,7 @@ async fn manage_device_events(publisher: &Arc<Mutex<AlfredPublisher>>, drivers: 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     env_logger::init();
-    let module = InterfaceModule::new(MODULE_NAME).await?;
+    let module = AlfredModule::new(MODULE_NAME).await?;
     let subscriber = Arc::new(Mutex::new(module.connection.subscriber));
     let publisher1 = Arc::new(Mutex::new(module.connection.publisher));
     let publisher2 = publisher1.clone();
