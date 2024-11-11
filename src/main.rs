@@ -2,12 +2,11 @@ use std::collections::HashMap;
 use std::string::ToString;
 use std::sync::Arc;
 use std::time::Duration;
-use alfred_rs::connection::{Receiver, Sender};
 use alfred_rs::error::Error;
 use alfred_rs::AlfredModule;
+use alfred_rs::connection::Connection;
 use alfred_rs::log::{debug, error, warn};
 use alfred_rs::message::{Message, MessageType};
-use alfred_rs::pubsub_connection::{AlfredPublisher, AlfredSubscriber};
 use alfred_rs::tokio;
 use alfred_rs::tokio::sync::Mutex;
 use alfred_idroid01::Drivers;
@@ -15,19 +14,19 @@ use alfred_idroid01::Drivers;
 const MODULE_NAME: &str = "idroid01";
 const INPUT_TOPIC: &str = "idroid01";
 
-async fn manage_input_messages(publisher: &Arc<Mutex<AlfredPublisher>>, subscriber: &Arc<Mutex<AlfredSubscriber>>, drivers: &Arc<Mutex<Drivers>>) -> Result<(), Error> {
-    let (topic, message) = subscriber.lock().await.receive().await?;
+async fn manage_input_messages(alfred_connection: &Connection, drivers: &Arc<Mutex<Drivers>>) -> Result<(), Error> {
+    let (topic, message) = alfred_connection.receive().await?;
     let drivers = drivers.clone();
     if topic.as_str() == INPUT_TOPIC {
-            let result = drivers.lock().await.get_command(message.text.as_str()).unwrap_or_else(|_| format!("Unknown command {}", message.text));
-            debug!("{}", result);
-            let (response_topic, response) = message.reply(result.clone(), MessageType::Text)?;
-            publisher.lock().await.send(&response_topic, &response).await.inspect_err(|err| error!("{err}"))?;
+        let result = drivers.lock().await.get_command(message.text.as_str()).unwrap_or_else(|_| format!("Unknown command {}", message.text));
+        debug!("{}", result);
+        let (response_topic, response) = message.reply(result.clone(), MessageType::Text)?;
+        alfred_connection.send(&response_topic, &response).await.inspect_err(|err| error!("{err}"))?;
     }
     Ok(())
 }
 
-async fn manage_device_events(publisher: &Arc<Mutex<AlfredPublisher>>, drivers: &Arc<Mutex<Drivers>>, watcher_commands: Vec<String>, devices_statuses: &mut HashMap<String, String>) -> Result<(), Box<dyn std::error::Error>> {
+async fn manage_device_events(connection: &Connection, drivers: &Arc<Mutex<Drivers>>, watcher_commands: Vec<String>, devices_statuses: &mut HashMap<String, String>) -> Result<(), Box<dyn std::error::Error>> {
     let mut found_difference = false;
     let mut found_error = false;
     for command in watcher_commands {
@@ -47,7 +46,7 @@ async fn manage_device_events(publisher: &Arc<Mutex<AlfredPublisher>>, drivers: 
                     debug!("{command_str}: {result} (previous: {previous})");
                     let mut message = Message::empty();
                     message.text = result;
-                    publisher.lock().await.send_event(MODULE_NAME, command_str.replace(' ', "_").as_str(), &message).await?;
+                    connection.send_event(MODULE_NAME, command_str.replace(' ', "_").as_str(), &message).await?;
                 }
             }
         }
@@ -60,14 +59,13 @@ async fn manage_device_events(publisher: &Arc<Mutex<AlfredPublisher>>, drivers: 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     env_logger::init();
-    let module = AlfredModule::new(MODULE_NAME).await?;
-    let subscriber = Arc::new(Mutex::new(module.connection.subscriber));
-    let publisher1 = Arc::new(Mutex::new(module.connection.publisher));
-    let publisher2 = publisher1.clone();
+    let mut module = AlfredModule::new(MODULE_NAME).await?;
+    module.listen(INPUT_TOPIC).await?;
+    let input_connection = module.connection.clone();
+    let event_connection = module.connection.clone();
 
     let drivers = Arc::new(Mutex::new(Drivers::new("/dev/i2c-1")));
     let drivers2 = drivers.clone();
-    subscriber.lock().await.listen(INPUT_TOPIC).await?;
     // TODO: load from config.toml file
     let watcher_commands = vec![
         "head touch".to_string(),
@@ -79,12 +77,12 @@ async fn main() -> Result<(), Error> {
         async move {
             let mut devices_statuses = HashMap::new();
             loop {
-                manage_device_events(&publisher1, &drivers, watcher_commands.clone(), &mut devices_statuses).await.unwrap_or(());
+                manage_device_events(&event_connection, &drivers, watcher_commands.clone(), &mut devices_statuses).await.unwrap_or(());
             }
         }.await;
     });
 
     loop {
-        manage_input_messages(&publisher2, &subscriber, &drivers.clone()).await?;
+        manage_input_messages(&input_connection, &drivers.clone()).await?;
     }
 }
