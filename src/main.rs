@@ -14,14 +14,14 @@ use alfred_idroid01::Drivers;
 const MODULE_NAME: &str = "idroid01";
 const INPUT_TOPIC: &str = "idroid01";
 
-async fn manage_input_messages(alfred_connection: &Connection, drivers: &Arc<Mutex<Drivers>>) -> Result<(), Error> {
-    let (topic, message) = alfred_connection.receive().await?;
+async fn manage_input_messages(module: &AlfredModule, drivers: &Arc<Mutex<Drivers>>) -> Result<(), Error> {
+    let (topic, message) = module.receive().await?;
     let drivers = drivers.clone();
     if topic.as_str() == INPUT_TOPIC {
         let result = drivers.lock().await.get_command(message.text.as_str()).unwrap_or_else(|_| format!("Unknown command {}", message.text));
         debug!("{}", result);
         let (response_topic, response) = message.reply(result.clone(), MessageType::Text)?;
-        alfred_connection.send(&response_topic, &response).await.inspect_err(|err| error!("{err}"))?;
+        module.send(&response_topic, &response).await.inspect_err(|err| error!("{err}"))?;
     }
     Ok(())
 }
@@ -61,7 +61,6 @@ async fn main() -> Result<(), Error> {
     env_logger::init();
     let mut module = AlfredModule::new(MODULE_NAME).await?;
     module.listen(INPUT_TOPIC).await?;
-    let input_connection = module.connection.clone();
     let event_connection = module.connection.clone();
 
     let drivers = Arc::new(Mutex::new(Drivers::new("/dev/i2c-1")));
@@ -83,6 +82,6 @@ async fn main() -> Result<(), Error> {
     });
 
     loop {
-        manage_input_messages(&input_connection, &drivers.clone()).await?;
+        manage_input_messages(&module, &drivers.clone()).await?;
     }
 }
