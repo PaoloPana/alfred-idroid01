@@ -59,7 +59,7 @@ async fn manage_device_events(connection: &Connection, drivers: &Arc<Mutex<Drive
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     env_logger::init();
-    let mut module = AlfredModule::new(MODULE_NAME).await?;
+    let mut module = AlfredModule::new(MODULE_NAME, env!("CARGO_PKG_VERSION")).await?;
     module.listen(INPUT_TOPIC).await?;
     let event_connection = module.connection.clone();
 
