@@ -79,7 +79,7 @@ impl Base {
         let param = commands.pop_front();
         match param {
             None => {
-                return match command.as_str() {
+                match command.as_str() {
                     "" => Ok(self.get_status()),
                     "fwd" => self.get_fwd().map(|v| v.to_string()),
                     "bwd" => self.get_bwd().map(|v| v.to_string()),
@@ -88,7 +88,7 @@ impl Base {
                     "base" => self.get_base().map(|v| v.to_string()),
                     "firmware" => self.get_firmware(),
                     _ => Err("Unknown".to_string())
-                };
+                }
             },
             Some(param) => {
                 let param = param.parse::<u8>().map_err(|e| e.to_string())?;
